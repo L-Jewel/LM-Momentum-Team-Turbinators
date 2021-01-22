@@ -213,30 +213,24 @@ async def retrieveSensorData():
 Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
 '''
 def computationalAnalysis(lidar_dict, gps_dict):
-'''
+    #variables
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
+    #the grid lines we are using can change, fow now I just picked the bottom one and one 20 degrees away
     r1 = lidar_dict['ranges'][9][10]
     r2 = lidar_dict['ranges'][7][10]
+    #equations
     y1 = r1 * math.sin(theta + alpha1)
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
+
+    #We need to settle on how much to approximate so that if teh terrain is pretty much falt it doesnt think its going uphill
     slope = (y2 - y1) / (x2 - x1)
     beta = math.atan(slope)
-    #since we are only using 2 grid lines do we even need
-    #the inequalities to determine uphill or downhill?
-    if y1 > y2:
-        #downhill
-        #need to talk about how to round so that in kind of
-        #flat terrain it doesnt constantly go up or downhill
-    elif y2 > y1:
-        #uphill
-        #same conflict as downhill
-'''
-    print(lidar_dict)
-    print(gps_dict)
+    return slope
+
 
     # TODO: Do math or whatever
 
