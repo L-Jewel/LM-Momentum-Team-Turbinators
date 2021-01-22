@@ -99,7 +99,7 @@ x_pos: x coord of drone
 y_pos: y coord of drone
 z_pos: z coord of drone
 
-x_ori: roll
+x_ori: roll?
 y_ori: pitch?
 z_ori: yaw?
 w_ori: no clue what this is
@@ -232,6 +232,7 @@ def computationalAnalysis(lidar_dict, gps_dict):
     #we can change the actual number if we need to
     if abs(beta) < .001:
         beta = 0
+
     return beta
 
 
