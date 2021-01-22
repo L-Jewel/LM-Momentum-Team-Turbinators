@@ -197,34 +197,26 @@ def display_GPS(gazebo_sub):
     return result
 
 '''
-Retrieves the values from both the GPS and LiDAR sensor and returns it (+ prints them to the terminal)
+Retrieves the values from both the GPS and LiDAR sensor and returns it
 
-Depending on the argument (strings), it retrieves the respective sensor data
-gps_data --> Returns GPS data dictionary
-lidar_data --> Returns LiDAR data dictionary
-all --> Returns both LiDAR and GPS data dictionary (use two variables to retrieve)
-If the input is neither, it will return nothing (It's possible for me to raise an error if desired)
+Returns two dictionaries (make sure to use two variables to retrieve)
 '''
-async def retrieveSensorData(sensors):
-    if sensors == 'gps_data':
-        print('-- Retrieving GPS Sensor Data')
-        gps_val = await gz_sub.get_GPS()
-        return display_GPS(gz_sub)
-    elif sensors == 'lidar_data':
-        print('-- Retrieving LiDAR Sensor Data')
-        lidar_val = await gz_sub.get_LaserScanStamped()
-        return display_LiDAR(gz_sub)
-    elif sensors == 'all':
-        print('-- Retrieving LiDAR and GPS Sensor Data')
-        gps_val = await gz_sub.get_GPS()
-        lidar_val = await gz_sub.get_LaserScanStamped()
-        return display_LiDAR(gz_sub), display_GPS(gz_sub)
+async def retrieveSensorData():
+    print('-- Retrieving LiDAR and GPS Sensor Data')
+    gps_val = await gz_sub.get_GPS()
+    lidar_val = await gz_sub.get_LaserScanStamped()
+    return display_LiDAR(gz_sub), display_GPS(gz_sub)
 
 '''
 ~Computational Analysis~
+
+Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
 '''
-async def computationalAnalysis():
-    await retrieveSensorData
+def computationalAnalysis(lidar_dict, gps_dict):
+    print(lidar_dict)
+    print(gps_dict)
+
+    # TODO: Do math or whatever
 
 async def run():
     # Connects to the drone
@@ -332,8 +324,10 @@ async def inject_pt(drone, mission_items, home_alt, home_lat, home_lon):
                 f"{mission_progress.total}")
 
             # This retrieves sensor data each time the drone reaches a waypoint
-            print('* Retrieving Sensor Data *')
-            await retrieveSensorData('all')
+            # I'm pretty sure the final position of Computational Analysis 
+            print('* Running ~Computational Analysis~ *')
+            lidar, gps = await retrieveSensorData()
+            computationalAnalysis(lidar, gps)
 
             if(mission_progress.current == mission_progress.total and not pt_injected):
                 mission_item_idx = mission_progress.current
