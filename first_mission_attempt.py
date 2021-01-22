@@ -229,6 +229,7 @@ def computationalAnalysis(lidar_dict, gps_dict):
     slope = (y2 - y1) / (x2 - x1)
     beta = math.atan(slope)
     #if the slope is super small, pretend like its flat
+    #we can change the actual number if we need to
     if abs(beta) < .001:
         beta = 0
     return beta
