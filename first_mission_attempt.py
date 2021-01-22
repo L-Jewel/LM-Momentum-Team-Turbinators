@@ -397,4 +397,3 @@ async def observe_is_in_air(drone, running_tasks):
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())
-    #hi
