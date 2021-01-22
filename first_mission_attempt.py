@@ -168,8 +168,8 @@ Returns a dictionary with the following values:
 sec: current time in seconds
 nsec: current time in nanoseconds(?)
 
-lat_deg: ???
-long_deg: ???
+lat_deg: ??? latitude and longitude are given in degrees I'm pretty sure
+long_deg: ???latitude and longitude are given in degrees I'm pretty sure
 altitude: Not sure if this is relative or absolute
 
 v_east: velocity in the east direction (positive longitude?)
@@ -324,7 +324,7 @@ async def inject_pt(drone, mission_items, home_alt, home_lat, home_lon):
                 f"{mission_progress.total}")
 
             # This retrieves sensor data each time the drone reaches a waypoint
-            # I'm pretty sure the final position of Computational Analysis 
+            # I'm pretty sure the final position of Computational Analysis
             print('* Running ~Computational Analysis~ *')
             lidar, gps = await retrieveSensorData()
             computationalAnalysis(lidar, gps)
