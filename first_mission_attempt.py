@@ -99,10 +99,10 @@ x_pos: x coord of drone
 y_pos: y coord of drone
 z_pos: z coord of drone
 
-x_ori
-y_ori
-z_ori
-w_ori
+x_ori: roll
+y_ori: pitch?
+z_ori: yaw?
+w_ori: no clue what this is
 ^ Tbh, I don't know what these mean. They're just under the orientation bracket
 
 h_angle_max: Max horizontal angle (pi/6)
