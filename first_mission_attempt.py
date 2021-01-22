@@ -168,8 +168,8 @@ Returns a dictionary with the following values:
 sec: current time in seconds
 nsec: current time in nanoseconds(?)
 
-lat_deg: ??? latitude and longitude are given in degrees I'm pretty sure
-long_deg: ???latitude and longitude are given in degrees I'm pretty sure
+lat_deg: latitude given in degrees
+long_deg: longitude are given in degrees
 altitude: Not sure if this is relative or absolute
 
 v_east: velocity in the east direction (positive longitude?)
