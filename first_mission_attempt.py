@@ -226,10 +226,12 @@ def computationalAnalysis(lidar_dict, gps_dict):
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
 
-    #We need to settle on how much to approximate so that if teh terrain is pretty much falt it doesnt think its going uphill
     slope = (y2 - y1) / (x2 - x1)
     beta = math.atan(slope)
-    return slope
+    #if the slope is super small, pretend like its flat
+    if abs(beta) < .001:
+        beta = 0
+    return beta
 
 
     # TODO: Do math or whatever
