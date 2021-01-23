@@ -226,9 +226,10 @@ def computationalAnalysis(lidar_dict, gps_dict):
 
     slope = (y2 - y1) / (x2 - x1)
     beta = math.atan(slope)
-
+    print(f"this is the angle of inclination: {beta}")
     return beta
 
+def motionPlanning(beta)
 
     # TODO: Do math or whatever
     return
