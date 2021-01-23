@@ -259,7 +259,7 @@ def computationalAnalysis(lidar_dict, gps_dict):
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
 
-    slope = (y2 - y1) / (x2 - x1)
+    slope = (y2 - y1) / (x2 - x1) * 111000
     beta = math.atan(slope)
     print(f"this is the angle of inclination: {beta}")
     return beta
