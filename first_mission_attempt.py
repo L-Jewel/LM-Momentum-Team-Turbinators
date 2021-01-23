@@ -12,8 +12,6 @@ from mavsdk.mission import (MissionItem, MissionPlan)
 # The gazebo master from PX4 message
 HOST, PORT = "127.0.0.1", 11345
 
-# If I'm not mistaken, this class utilizes protocol buffers to retrieve data from the sensors
-# If we don't need GPS and LiDAR data simultaneously, I can split these into two classes
 class GazeboMessageSubscriber:
     def __init__(self, host, port, timeout=30): # Initializes the class
         self.host = host
@@ -211,9 +209,7 @@ async def retrieveSensorData():
 ~Computational Analysis~
 
 Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
-'''
-def computationalAnalysis(lidar_dict, gps_dict):
-'''
+
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
@@ -235,10 +231,9 @@ def computationalAnalysis(lidar_dict, gps_dict):
         #uphill
         #same conflict as downhill
 '''
-    print(lidar_dict)
-    print(gps_dict)
-
+def computationalAnalysis(lidar_dict, gps_dict):
     # TODO: Do math or whatever
+    return
 
 async def run():
     # Connects to the drone
