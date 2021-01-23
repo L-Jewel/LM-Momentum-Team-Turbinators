@@ -229,7 +229,10 @@ def computationalAnalysis(lidar_dict, gps_dict):
     print(f"this is the angle of inclination: {beta}")
     return beta
 
-def motionPlanning(beta)
+def motionPlanning(beta):
+    #need all the calculations and for the funciton to yield values
+    #for the run function to go to based on the angle
+    print(beta)
 
     # TODO: Do math or whatever
     return
