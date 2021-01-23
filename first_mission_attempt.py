@@ -227,7 +227,6 @@ def computationalAnalysis(lidar_dict, gps_dict):
     slope = (y2 - y1) / (x2 - x1)
     beta = math.atan(slope)
 
-
     return beta
 
 
