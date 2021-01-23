@@ -5,6 +5,7 @@ import pygazebo
 import pygazebo.msg.v11.laserscan_stamped_pb2 # Imports LiDAR readouts
 import pygazebo.msg.v11.gps_pb2 # Imports GPS readouts
 import math
+import time
 
 from mavsdk import System
 from mavsdk.mission import (MissionItem, MissionPlan)
@@ -84,39 +85,54 @@ class GazeboMessageSubscriber:
 gz_sub = GazeboMessageSubscriber(HOST, PORT)
 asyncio.ensure_future(gz_sub.connect())
 
+async def observe_is_in_air(drone, running_tasks):
+    """ Monitors whether the drone is flying or not and
+    returns after landing """
+
+    print("Observing in air")
+
+    was_in_air = False
+
+    async for is_in_air in drone.telemetry.in_air():
+        if is_in_air:
+            was_in_air = is_in_air
+
+        if was_in_air and not is_in_air:
+            for task in running_tasks:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            await asyncio.get_event_loop().shutdown_asyncgens()
+
+            return
+
 '''
 Converts the data from the LiDAR sensor into a usable data structure
-
 Argument: An instance of GazeboMessageSubscriber
-
 Returns a dictionary with the following values:
 sec: current time in seconds
 nsec: current time in nanoseconds(?)
-
 x_pos: x coord of drone
 y_pos: y coord of drone
 z_pos: z coord of drone
-
 x_ori: roll
 y_ori: pitch?
 z_ori: yaw?
 w_ori: no clue what this is
 ^ Tbh, I don't know what these mean. They're just under the orientation bracket
-
 h_angle_max: Max horizontal angle (pi/6)
 h_angle_min: Min horizontal angle (-pi/6)
 h_angle_step: Step by which each horizontal angle increases
 h_angle_count: Number of horizontal scan lines (20)
-
 v_angle_max: Max vertial angle (0)
 v_angle_min: Min vertical angle (-pi/2)
 v_angle_step: Step by which each vertical angle increases
 v_angle_count: Number of vertical scan lines (20)
-
 range_min: Minimum range in which LiDAR will detect
 range_max: Maximum range in which LiDAR will detect
 (Else, it will return inf)
-
 ranges: 2D array containing the sensed ranges (where the rows have the same vertical angle
 and the columns have the same horizontal angle)
 '''
@@ -159,17 +175,13 @@ def display_LiDAR(gazebo_sub):
 
 '''
 Converts the data from the GPS sensor into a usable data structure
-
 Argument: An instance of GazeboMessageSubscriber
-
 Returns a dictionary with the following values:
 sec: current time in seconds
 nsec: current time in nanoseconds(?)
-
 lat_deg: latitude given in degrees
 long_deg: longitude are given in degrees
 altitude: Not sure if this is relative or absolute
-
 v_east: velocity in the east direction (positive longitude?)
 v_north: velocity in the north direction (positive latitude?)
 v_up: velocity upwards (towards space? away from the ground?)
@@ -196,7 +208,6 @@ def display_GPS(gazebo_sub):
 
 '''
 Retrieves the values from both the GPS and LiDAR sensor and returns it
-
 Returns two dictionaries (make sure to use two variables to retrieve)
 '''
 async def retrieveSensorData():
@@ -207,9 +218,7 @@ async def retrieveSensorData():
 
 '''
 ~Computational Analysis~
-
 Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
-
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
@@ -233,9 +242,67 @@ Arguments: The dictionary containing LiDAR values and the dictionary containing 
 '''
 def computationalAnalysis(lidar_dict, gps_dict):
     # TODO: Do math or whatever
-    return
+    return # Return three different values: new_lat, new_long, new_alt
+
+async def run_mission(drone, mission_items, lla_ref, gz_sub):
+    max_speed = 2 # m/s
+    done = False # Signals end of mission
+
+    mission_item_idx = 0 # Keeps track of the mission item we're on
+    print("made it")
+
+    async for mission_progress in drone.mission.mission_progress():
+        # breakpoint()
+        print(mission_progress)
+        if (not mission_progress.current == -1):
+            print(f"Mission progress: "
+                f"{mission_progress.current}/"
+                f"{mission_progress.total}")
+
+            if (mission_progress.current == mission_progress.total - 1 and not done):
+                print("-- Pause and clear mission")
+                await drone.mission.pause_mission()
+                await drone.mission.clear_mission()
+
+                mission_item_idx = mission_progress.current
+
+                print("-- Get LiDAR and GPS Readings")
+                lidar, gps = await retrieveSensorData()
+                # computationalAnalysis(lidar, gps)
+                # TODO: Algorithm boyo goes here
+                # When the drone is ready to land, set done equal to True
+                if (mission_progress.current == len(mission_items) - 1):
+                    done = True
+
+                print("-- Making new mission plan")
+                mission_items.insert(mission_item_idx, MissionItem(lla_ref[0],
+                                    lla_ref[1] + 0.0001,
+                                    lla_ref[2] + 1,
+                                    max_speed,
+                                    True,
+                                    float('nan'),
+                                    float('nan'),
+                                    MissionItem.CameraAction.NONE,
+                                    float('nan'),
+                                    float('nan')))
+                mission_plan = MissionPlan(mission_items)
+
+                print("-- Uploading updated mission")
+                await drone.mission.upload_mission(mission_plan)
+                await asyncio.sleep(1) # Lets upload finish
+
+                print("-- Resuming mission")
+                await drone.mission.set_current_mission_item(mission_item_idx)
+                await drone.mission.start_mission()
+        if (mission_progress.current == mission_progress.total and done):
+            print("-- Landing")
+            await drone.action.land()
 
 async def run():
+    # Apparently a test message makes subsequent requests faster
+    gz_task = asyncio.create_task(gz_sub.connect())
+    await gz_sub.get_LaserScanStamped()
+
     # Connects to the drone
     drone = System()
     await drone.connect(system_address="udp://:14540")
@@ -253,51 +320,22 @@ async def run():
             break
 
     print("Fetching amsl altitude at home location....")
+    lla_ref = [] # Latitude, Longitude, Altitude reference
     async for terrain_info in drone.telemetry.home():
-        home_alt = terrain_info.relative_altitude_m
-        home_lat = terrain_info.latitude_deg
-        home_lon = terrain_info.longitude_deg
+        lla_ref = [terrain_info.latitude_deg, terrain_info.longitude_deg, terrain_info.relative_altitude_m]
         break
+
+    AGL = lla_ref[2] + 1 # Height above ground to maintain
 
     # The mission items would be appended to this array here
     mission_items = []
     # mission_items.append(MissionItems(insert arguments here))
 
-    # Below is the demo mission path --> It's been commented out
-    mission_items.append(MissionItem(home_lat + 0.0001,
-                                     home_lon + 0.0000,
-                                     home_alt + 5,
-                                     10,
-                                     True,
-                                     float('nan'),
-                                     float('nan'),
-                                     MissionItem.CameraAction.NONE,
-                                     float('nan'),
-                                     float('nan')))
-    mission_items.append(MissionItem(home_lat + 0.0001,
-                                     home_lon + 0.0001,
-                                     home_alt + 5,
-                                     10,
-                                     True,
-                                     float('nan'),
-                                     float('nan'),
-                                     MissionItem.CameraAction.NONE,
-                                     float('nan'),
-                                     float('nan')))
-    mission_items.append(MissionItem(home_lat + 0.0000,
-                                     home_lon + 0.0001,
-                                     home_alt + 5,
-                                     10,
-                                     True,
-                                     float('nan'),
-                                     float('nan'),
-                                     MissionItem.CameraAction.NONE,
-                                     float('nan'),
-                                     float('nan')))
-    mission_items.append(MissionItem(home_lat - 0.0001,
-                                     home_lon + 0.0001,
-                                     home_alt + 5,
-                                     10,
+    # First waypoint would be directly above the starting location
+    mission_items.append(MissionItem(lla_ref[0],
+                                     lla_ref[1],
+                                     AGL,
+                                     2,
                                      True,
                                      float('nan'),
                                      float('nan'),
@@ -305,13 +343,25 @@ async def run():
                                      float('nan'),
                                      float('nan')))
 
-    # This here is the code to inject a waypoint into the mission plan (?)
-    inject_pt_task = asyncio.ensure_future(inject_pt(drone, mission_items, home_alt, home_lat, home_lon))
-    running_tasks = [inject_pt_task]
+    # Last waypoint is the end
+    final_lat = lla_ref[0] + 0.0001
+    final_lon = lla_ref[1] + 0.0001
+    mission_items.append(MissionItem(final_lat,
+                                     final_lon,
+                                     AGL,
+                                     2,
+                                     True,
+                                     float('nan'),
+                                     float('nan'),
+                                     MissionItem.CameraAction.NONE,
+                                     float('nan'),
+                                     float('nan')))
 
-    termination_task = asyncio.ensure_future(observe_is_in_air(drone, running_tasks))
+    mission_plan = MissionPlan(mission_items) # compiles the initial mission plan
 
-    mission_plan = MissionPlan(mission_items)
+    # "Spool up the mission and mission monitor"
+    mission_task = asyncio.create_task(run_mission(drone, mission_items, lla_ref, gz_sub))
+    termination_task = asyncio.ensure_future(observe_is_in_air(drone, [mission_task, gz_task]))
 
     print("-- Arming")
     await drone.action.arm()
@@ -327,83 +377,12 @@ async def run():
     await asyncio.sleep(1)
     print("awaiting done")
 
+    await drone.action.set_takeoff_altitude(AGL)
+
     print("-- Starting mission")
     await drone.mission.start_mission()
-
+    print('yeet')
     await termination_task
-
-async def inject_pt(drone, mission_items, home_alt, home_lat, home_lon):
-    pt_injected = False
-    async for mission_progress in drone.mission.mission_progress():
-        if(not mission_progress.current == -1):
-            print(f"Mission progress: "
-                f"{mission_progress.current}/"
-                f"{mission_progress.total}")
-
-            # This retrieves sensor data each time the drone reaches a waypoint
-            # I'm pretty sure the final position of Computational Analysis
-            print('* Running ~Computational Analysis~ *')
-            lidar, gps = await retrieveSensorData()
-            computationalAnalysis(lidar, gps)
-
-            if(mission_progress.current == mission_progress.total and not pt_injected):
-                mission_item_idx = mission_progress.current
-                print("-- Pausing mission")
-                await drone.mission.pause_mission()
-                await drone.mission.clear_mission()
-
-                print(f"-- Injecting waypoint at "
-                f"{mission_item_idx}")
-
-                mission_items.insert(mission_progress.current, MissionItem(home_lat,
-                                     home_lon,
-                                     home_alt,
-                                     10,
-                                     True,
-                                     float('nan'),
-                                     float('nan'),
-                                     MissionItem.CameraAction.NONE,
-                                     float('nan'),
-                                     float('nan')))
-                mission_plan = MissionPlan(mission_items)
-                await drone.mission.set_return_to_launch_after_mission(True)
-
-                print("-- Uploading updated mission")
-                await drone.mission.upload_mission(mission_plan)
-
-                print("-- Resuming mission")
-                await drone.mission.set_current_mission_item(mission_item_idx)
-                await drone.mission.start_mission()
-
-                pt_injected = True
-        if(mission_progress.current == mission_progress.total):
-            print("-- Landing")
-            await drone.action.land()
-
-
-async def observe_is_in_air(drone, running_tasks):
-    """ Monitors whether the drone is flying or not and
-    returns after landing """
-
-    print("Observing in air")
-
-    was_in_air = False
-
-    async for is_in_air in drone.telemetry.in_air():
-        if is_in_air:
-            was_in_air = is_in_air
-
-        if was_in_air and not is_in_air:
-            for task in running_tasks:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-            await asyncio.get_event_loop().shutdown_asyncgens()
-
-            return
-
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
