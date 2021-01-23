@@ -210,6 +210,30 @@ async def retrieveSensorData():
 
 Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
 '''
+
+#function to get the initial point (only run once?)
+
+def getInitialPoint():
+
+    await gz_sub.get_GPS()
+    latitude = display_GPS(gz_sub)['long_deg']
+    longitude = display_GPS(gz_sub)['lat_deg']
+
+    return latitude, longitude
+
+#define the initial points and get the final point
+initial_lat, initial_long = getInitialPoint()
+final_lat = input("What is the final latitude?\n")
+final_long = input("What is the final longitude?\n")
+
+class FinalVector:
+    def __init__(self, lat, long, alt):
+        self.lat = final_lat - initial_lat
+        self.long = final_long - initial_long
+        self.magnitude = (self.lat ** 2 + self.long ** 2) ** 0.5
+        #unit vector
+        self.vector = (self.lat / self.magnitude, self.long / self.magnitude)
+
 def computationalAnalysis(lidar_dict, gps_dict):
     #variables
     alpha1 = math.pi / -2
@@ -229,9 +253,13 @@ def computationalAnalysis(lidar_dict, gps_dict):
     print(f"this is the angle of inclination: {beta}")
     return beta
 
+
+
 def motionPlanning(beta):
     #need all the calculations and for the funciton to yield values
     #for the run function to go to based on the angle
+
+
     print(beta)
 
     # TODO: Do math or whatever
