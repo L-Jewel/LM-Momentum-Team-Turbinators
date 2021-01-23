@@ -209,13 +209,9 @@ async def retrieveSensorData():
 ~Computational Analysis~
 
 Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
-<<<<<<< HEAD
 '''
 def computationalAnalysis(lidar_dict, gps_dict):
     #variables
-=======
-
->>>>>>> 5d82367225a89d5972fbedc521825dcaae10c7e8
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
@@ -230,28 +226,11 @@ def computationalAnalysis(lidar_dict, gps_dict):
 
     slope = (y2 - y1) / (x2 - x1)
     beta = math.atan(slope)
-<<<<<<< HEAD
-    #if the slope is super small, pretend like its flat
-    #we can change the actual number if we need to
-    if abs(beta) < .001:
-        beta = 0
+
 
     return beta
 
 
-=======
-    #since we are only using 2 grid lines do we even need
-    #the inequalities to determine uphill or downhill?
-    if y1 > y2:
-        #downhill
-        #need to talk about how to round so that in kind of
-        #flat terrain it doesnt constantly go up or downhill
-    elif y2 > y1:
-        #uphill
-        #same conflict as downhill
-'''
-def computationalAnalysis(lidar_dict, gps_dict):
->>>>>>> 5d82367225a89d5972fbedc521825dcaae10c7e8
     # TODO: Do math or whatever
     return
 
