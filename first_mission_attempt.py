@@ -219,62 +219,59 @@ async def retrieveSensorData():
 
 '''
 ~Computational Analysis~
-Arguments: The dictionary containing LiDAR values and the dictionary containing GPS values
+Arguments: The dictionary containing LiDAR values and the dictionary
+containing GPS values and uses this to
 '''
 
-#function to get the initial point (only run once?)
+#initial points
+current_lat = display_GPS(gz_sub)['long_deg']
+current_long = display_GPS(gz_sub)['lat_deg']
+current_alt = display_GPS(gz_sub)['altitude']
 
-def getInitialPoint():
-
-    await gz_sub.get_GPS()
-    latitude = display_GPS(gz_sub)['long_deg']
-    longitude = display_GPS(gz_sub)['lat_deg']
-
-    return latitude, longitude
-
-#define the initial points and get the final point
-initial_lat, initial_long = getInitialPoint()
+#ask for final point
 final_lat = input("What is the final latitude?\n")
 final_long = input("What is the final longitude?\n")
 
-class FinalVector:
-    def __init__(self, lat, long, alt):
-        self.lat = final_lat - initial_lat
-        self.long = final_long - initial_long
-        self.magnitude = (self.lat ** 2 + self.long ** 2) ** 0.5
-        #unit vector
-        self.vector = (self.lat / self.magnitude, self.long / self.magnitude)
+#full vector
+lat = final_lat - initial_lat
+long = final_long - initial_long
+magnitude = (lat ** 2 + long ** 2) ** 0.5
 
+#unit vector
+unit_vector_lat = lat / magnitude
+unit_vector_long = long / magnitude
+
+#takes data and returns lat, long, and alt for next point
 def computationalAnalysis(lidar_dict, gps_dict):
+
     #variables
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
+
     #the grid lines we are using can change, fow now I just picked the bottom one and one 20 degrees away
     r1 = lidar_dict['ranges'][9][10]
     r2 = lidar_dict['ranges'][7][10]
+
     #equations
     y1 = r1 * math.sin(theta + alpha1)
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
 
-    slope = (y2 - y1) / (x2 - x1) * 111000
-    beta = math.atan(slope)
-    print(f"this is the angle of inclination: {beta}")
-    return beta
+    #change in values
+    change_lat = unit_vector_lat * (x2 - x1) / 111000
+    change_long = unit_vector_long * (x2 - x1) / 111000
+    change_alt = y2 - y1
 
+    #redefine current values to goal
+    global current_lat, current_lat, current_long
+    current_lat += change_lat
+    current_long += change_long
+    current_alt += change_alt
 
+    return current_lat, current_long, current_alt
 
-def motionPlanning(beta):
-    #need all the calculations and for the funciton to yield values
-    #for the run function to go to based on the angle
-
-
-    print(beta)
-
-    # TODO: Do math or whatever
-    return # Return three different values: new_lat, new_long, new_alt
 
 async def run_mission(drone, mission_items, lla_ref, gz_sub):
     max_speed = 2 # m/s
