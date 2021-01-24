@@ -212,10 +212,10 @@ Retrieves the values from both the GPS and LiDAR sensor and returns it
 Returns two dictionaries (make sure to use two variables to retrieve)
 '''
 async def retrieveSensorData():
-    print('-- Retrieving LiDAR and GPS Sensor Data')
+    print('-- Retrieving LiDAR Sensor Data')
     # gps_val = await gz_sub.get_GPS() <-- Removing because it isn't needed
     lidar_val = await gz_sub.get_LaserScanStamped()
-    return display_LiDAR(gz_sub), display_GPS(gz_sub)
+    return display_LiDAR(gz_sub)
 
 '''
 Retrieves initial GPS state of drone
@@ -283,15 +283,18 @@ def computationalAnalysis(lidar_dict):
     change_long = unit_vector_long * (x2 - x1) / 111000
     change_alt = y2 - y1
 
+    # TODO: ** Below, I've commented out code and returned set values so that it will run **
+
     #redefine current values to goal
-    current_lat += change_lat
-    current_long += change_long
-    current_alt += change_alt
+    # current_lat += change_lat
+    # current_long += change_long
+    # current_alt += change_alt
 
     # TODO: Figure out how to make this function handle 'inf' range values
-    # As of right now, the code will not continue because the values that are returned atm
+    # With the original code, the code will not continue because the values that are returned atm
     # are of value 'inf', which isn't good.
-    return current_lat, current_long, current_alt
+    # return current_lat, current_long, current_alt <-- original code
+    return current_lat, current_long + 0.0001, current_alt + 1 # Remember AGL in altitude
 
 
 async def run_mission(drone, mission_items, lla_ref, gz_sub):
@@ -327,7 +330,9 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 print("-- * Distance from end point calculated ", delta_lat, delta_long, distance_2d)
                 if (distance_2d < .000001): # If the drone is close enough to the final waypoint, it proceeds to land
                     done = True
+                    print("-- * Drone is close!")
                 else: # Else, it inserts the waypoint with the new coords
+                    print(f"-- * Injecting waypoint at {mission_item_idx}, Lat: {new_lat}, Long: {new_long}, Alt{new_alt}")
                     mission_items.insert(mission_item_idx, MissionItem(new_lat,
                                         new_long,
                                         new_alt,
