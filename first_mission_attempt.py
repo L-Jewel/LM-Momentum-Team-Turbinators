@@ -213,45 +213,64 @@ Returns two dictionaries (make sure to use two variables to retrieve)
 '''
 async def retrieveSensorData():
     print('-- Retrieving LiDAR and GPS Sensor Data')
-    gps_val = await gz_sub.get_GPS()
+    # gps_val = await gz_sub.get_GPS() <-- Removing because it isn't needed
     lidar_val = await gz_sub.get_LaserScanStamped()
     return display_LiDAR(gz_sub), display_GPS(gz_sub)
 
 '''
+Retrieves initial GPS state of drone
+
+I threw a bunch of global keywords here-will clean this up later
+'''
+def retrieveInitialState(lla_ref):
+    # # Retrieves initial GPS data
+    # initial_lidar_data, initial_gps_data = await retrieveSensorData()
+
+    # Initializes global variables
+    global current_lat, current_long, current_alt, final_lat, final_long, full_lat, full_long, magnitude, unit_vector_lat, unit_vector_long
+
+    #initial points
+    current_lat = lla_ref[0]
+    current_long = lla_ref[1]
+    current_alt = lla_ref[2]
+
+    #ask for final point
+    # For the sake of prototyping, I'm gonna remove the input statement
+    final_lat = current_lat + 0.0001
+    final_long = current_long + 0.0001
+    # final_lat = float(input("What is the final latitude?\n"))
+    # final_long = float(input("What is the final longitude?\n"))
+
+    #full vector
+    # TODO: Did y'all mean current lat/long (as opposed to initial lat/long)?
+    full_lat = final_lat - current_lat
+    full_long = final_long - current_long
+    # TODO: Did y'all mean full lat/long (as opposed to just lat/long)?
+    magnitude = (full_lat ** 2 + full_long ** 2) ** 0.5
+
+    #unit vector
+    unit_vector_lat = full_lat / magnitude
+    unit_vector_long = full_long / magnitude
+
+'''
 ~Computational Analysis~
+takes data and returns lat, long, and alt for next point
+
 Arguments: The dictionary containing LiDAR values and the dictionary
 containing GPS values and uses this to
+
+Output: New latitude, longitude, altitude
 '''
-
-#initial points
-current_lat = display_GPS(gz_sub)['long_deg']
-current_long = display_GPS(gz_sub)['lat_deg']
-current_alt = display_GPS(gz_sub)['altitude']
-
-#ask for final point
-final_lat = float(input("What is the final latitude?\n"))
-final_long = float(input("What is the final longitude?\n"))
-
-#full vector
-full_lat = final_lat - initial_lat
-full_long = final_long - initial_long
-magnitude = (lat ** 2 + long ** 2) ** 0.5
-
-#unit vector
-unit_vector_lat = full_lat / magnitude
-unit_vector_long = full_long / magnitude
-
-#takes data and returns lat, long, and alt for next point
-def computationalAnalysis(lidar_dict, gps_dict):
-
+def computationalAnalysis(lidar_dict):
     #variables
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
 
     #the grid lines we are using can change, fow now I just picked the bottom one and one 20 degrees away
-    r1 = lidar_dict['ranges'][9][10]
-    r2 = lidar_dict['ranges'][7][10]
+    # TODO: Arrays are zero indexed, so I subtracted one from each of the values so that the code would compile - check
+    r1 = lidar_dict['ranges'][8][9]
+    r2 = lidar_dict['ranges'][6][9]
 
     #equations
     y1 = r1 * math.sin(theta + alpha1)
@@ -265,24 +284,23 @@ def computationalAnalysis(lidar_dict, gps_dict):
     change_alt = y2 - y1
 
     #redefine current values to goal
-    global current_lat, current_long, current_alt
     current_lat += change_lat
     current_long += change_long
     current_alt += change_alt
 
+    # TODO: Figure out how to make this function handle 'inf' range values
+    # As of right now, the code will not continue because the values that are returned atm
+    # are of value 'inf', which isn't good.
     return current_lat, current_long, current_alt
 
 
 async def run_mission(drone, mission_items, lla_ref, gz_sub):
-    max_speed = 2 # m/s
+    max_speed = 1.5 # m/s
     done = False # Signals end of mission
 
     mission_item_idx = 0 # Keeps track of the mission item we're on
-    print("made it")
 
     async for mission_progress in drone.mission.mission_progress():
-        # breakpoint()
-        print(mission_progress)
         if (not mission_progress.current == -1):
             print(f"Mission progress: "
                 f"{mission_progress.current}/"
@@ -296,24 +314,31 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 mission_item_idx = mission_progress.current
 
                 print("-- Get LiDAR and GPS Readings")
-                lidar, gps = await retrieveSensorData()
-                # computationalAnalysis(lidar, gps)
-                # TODO: Algorithm boyo goes here
-                # When the drone is ready to land, set done equal to True
-                if (mission_progress.current == len(mission_items) - 1):
-                    done = True
+                lidar = await retrieveSensorData()
 
                 print("-- Making new mission plan")
-                mission_items.insert(mission_item_idx, MissionItem(lla_ref[0],
-                                    lla_ref[1] + 0.0001,
-                                    lla_ref[2] + 1,
-                                    max_speed,
-                                    True,
-                                    float('nan'),
-                                    float('nan'),
-                                    MissionItem.CameraAction.NONE,
-                                    float('nan'),
-                                    float('nan')))
+                new_lat, new_long, new_alt = computationalAnalysis(lidar) # Grabs the new lat/long/alt from the computaitonal analysis function
+
+                # Runs checks to see if the drone is done with the mission
+                print("-- * Analysis Completed ", new_lat, new_long, new_alt)
+                delta_lat = abs(final_lat - new_lat)
+                delta_long = abs(final_long - new_long)
+                distance_2d = math.sqrt(delta_lat * delta_lat + delta_long * delta_long)
+                print("-- * Distance from end point calculated ", delta_lat, delta_long, distance_2d)
+                if (distance_2d < .000001): # If the drone is close enough to the final waypoint, it proceeds to land
+                    done = True
+                else: # Else, it inserts the waypoint with the new coords
+                    mission_items.insert(mission_item_idx, MissionItem(new_lat,
+                                        new_long,
+                                        new_alt,
+                                        max_speed,
+                                        True,
+                                        float('nan'),
+                                        float('nan'),
+                                        MissionItem.CameraAction.NONE,
+                                        float('nan'),
+                                        float('nan')))
+                
                 mission_plan = MissionPlan(mission_items)
 
                 print("-- Uploading updated mission")
@@ -323,6 +348,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 print("-- Resuming mission")
                 await drone.mission.set_current_mission_item(mission_item_idx)
                 await drone.mission.start_mission()
+
         if (mission_progress.current == mission_progress.total and done):
             print("-- Landing")
             await drone.action.land()
@@ -353,6 +379,9 @@ async def run():
     async for terrain_info in drone.telemetry.home():
         lla_ref = [terrain_info.latitude_deg, terrain_info.longitude_deg, terrain_info.relative_altitude_m]
         break
+
+    print("Retrieving intial GPS data...")
+    retrieveInitialState(lla_ref)
 
     AGL = lla_ref[2] + 1 # Height above ground to maintain
 
@@ -410,7 +439,6 @@ async def run():
 
     print("-- Starting mission")
     await drone.mission.start_mission()
-    print('yeet')
     await termination_task
 
 if __name__ == "__main__":
