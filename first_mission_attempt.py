@@ -233,13 +233,13 @@ final_lat = float(input("What is the final latitude?\n"))
 final_long = float(input("What is the final longitude?\n"))
 
 #full vector
-lat = final_lat - initial_lat
-long = final_long - initial_long
+full_lat = final_lat - initial_lat
+full_long = final_long - initial_long
 magnitude = (lat ** 2 + long ** 2) ** 0.5
 
 #unit vector
-unit_vector_lat = lat / magnitude
-unit_vector_long = long / magnitude
+unit_vector_lat = full_lat / magnitude
+unit_vector_long = full_long / magnitude
 
 #takes data and returns lat, long, and alt for next point
 def computationalAnalysis(lidar_dict, gps_dict):
@@ -265,7 +265,7 @@ def computationalAnalysis(lidar_dict, gps_dict):
     change_alt = y2 - y1
 
     #redefine current values to goal
-    global current_lat, current_lat, current_long
+    global current_lat, current_long, current_alt
     current_lat += change_lat
     current_long += change_long
     current_alt += change_alt
