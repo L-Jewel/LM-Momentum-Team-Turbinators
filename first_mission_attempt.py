@@ -229,8 +229,8 @@ current_long = display_GPS(gz_sub)['lat_deg']
 current_alt = display_GPS(gz_sub)['altitude']
 
 #ask for final point
-final_lat = input("What is the final latitude?\n")
-final_long = input("What is the final longitude?\n")
+final_lat = float(input("What is the final latitude?\n"))
+final_long = float(input("What is the final longitude?\n"))
 
 #full vector
 lat = final_lat - initial_lat
