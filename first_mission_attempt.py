@@ -150,7 +150,7 @@ def display_LiDAR(gazebo_sub):
     result = {'sec': sec, 'nsec': nsec, 'x_pos': x_pos, 'y_pos': y_pos, 'z_pos': z_pos, 'x_ori': x_ori, 'y_ori': y_ori, 'z_ori': z_ori, 'w_ori': w_ori}
 
     # Bounds
-    result['h_angle_max'] = math.pi / 6
+    result['h_angle_max'] = gazebo_sub.LaserScanStamped.scan.angle_max
     result['h_angle_min'] = -1 * result['h_angle_max']
     result['h_angle_step'] = gazebo_sub.LaserScanStamped.scan.angle_step
     result['h_angle_count'] = 20
@@ -159,7 +159,7 @@ def display_LiDAR(gazebo_sub):
     result['range_max'] = 10
 
     result['v_angle_max'] = 0
-    result['v_angle_mix'] = -1 * (math.pi / 2)
+    result['v_angle_min'] = gazebo_sub.LaserScanStamped.scan.vertical_angle_min
     result['v_angle_step'] = gazebo_sub.LaserScanStamped.scan.vertical_angle_step
     result['v_angle_count'] = 9
 
@@ -343,7 +343,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                                         MissionItem.CameraAction.NONE,
                                         float('nan'),
                                         float('nan')))
-                
+
                 mission_plan = MissionPlan(mission_items)
 
                 print("-- Uploading updated mission")
