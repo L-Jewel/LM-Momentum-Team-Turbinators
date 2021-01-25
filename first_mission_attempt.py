@@ -235,17 +235,17 @@ def retrieveInitialState(lla_ref):
     current_alt = lla_ref[2]
 
     #ask for final point
-    # For the sake of prototyping, I'm gonna remove the input statement
     final_lat = current_lat + 0.0001
     final_long = current_long + 0.0001
     # final_lat = float(input("What is the final latitude?\n"))
     # final_long = float(input("What is the final longitude?\n"))
 
     #full vector
-    # TODO: Did y'all mean current lat/long (as opposed to initial lat/long)?
+    # TODO: Did y'all mean current lat/long (as opposed to initial lat/long)? yeah I changed the neams and forgot to change those
     full_lat = final_lat - current_lat
     full_long = final_long - current_long
-    # TODO: Did y'all mean full lat/long (as opposed to just lat/long)?
+
+    # TODO: Did y'all mean full lat/long (as opposed to just lat/long)? yeah
     magnitude = (full_lat ** 2 + full_long ** 2) ** 0.5
 
     #unit vector
@@ -343,7 +343,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                                         MissionItem.CameraAction.NONE,
                                         float('nan'),
                                         float('nan')))
-                
+
                 mission_plan = MissionPlan(mission_items)
 
                 print("-- Uploading updated mission")
