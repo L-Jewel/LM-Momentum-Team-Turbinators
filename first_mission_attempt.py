@@ -274,8 +274,10 @@ def computationalAnalysis(lidar_dict):
     # TODO: Arrays are zero indexed, so I subtracted one from each of the values so that the code would compile - check
     r1 = lidar_dict['ranges'][8][10]
     r2 = lidar_dict['ranges'][7][10]
-    if r2 == inf:
 
+    #inf error
+    if r2 == inf:
+        #r2 assumed as far as the lidar reached since we know it didnt detect anything
         r2 = 10
 
     #equations
