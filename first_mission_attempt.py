@@ -264,7 +264,7 @@ containing GPS values and uses this to
 Output: New latitude, longitude, altitude
 '''
 def computationalAnalysis(lidar_dict):
-    
+
     #variables
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
@@ -326,7 +326,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 new_lat, new_long, new_alt = computationalAnalysis(lidar) # Grabs the new lat/long/alt from the computaitonal analysis function
 
                 # Runs checks to see if the drone is done with the mission
-                print("-- * Analysis Completed ", new_lat, new_long, new_alt)
+                print("-- * Analysis Completed ", new_lat, new_long, new_alt) #
                 delta_lat = abs(final_lat - new_lat)
                 delta_long = abs(final_long - new_long)
                 distance_2d = math.sqrt(delta_lat * delta_lat + delta_long * delta_long)
@@ -410,7 +410,7 @@ async def run():
                                      float('nan')))
 
     # Last waypoint is the end
-    final_lat = lla_ref[0] + 0.0001
+    final_lat = lla_ref[0] + 0.0001 #Why define it again if they are beign defined in retrieveInitialState?
     final_lon = lla_ref[1] + 0.0001
     mission_items.append(MissionItem(final_lat,
                                      final_lon,
