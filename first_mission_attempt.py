@@ -150,7 +150,7 @@ def display_LiDAR(gazebo_sub):
     result = {'sec': sec, 'nsec': nsec, 'x_pos': x_pos, 'y_pos': y_pos, 'z_pos': z_pos, 'x_ori': x_ori, 'y_ori': y_ori, 'z_ori': z_ori, 'w_ori': w_ori}
 
     # Bounds
-    result['h_angle_max'] = gazebo_sub.LaserScanStamped.scan.angle_max
+    result['h_angle_max'] = math.pi / 6
     result['h_angle_min'] = -1 * result['h_angle_max']
     result['h_angle_step'] = gazebo_sub.LaserScanStamped.scan.angle_step
     result['h_angle_count'] = 20
@@ -159,7 +159,7 @@ def display_LiDAR(gazebo_sub):
     result['range_max'] = 10
 
     result['v_angle_max'] = 0
-    result['v_angle_min'] = gazebo_sub.LaserScanStamped.scan.vertical_angle_min
+    result['v_angle_mix'] = -1 * (math.pi / 2)
     result['v_angle_step'] = gazebo_sub.LaserScanStamped.scan.vertical_angle_step
     result['v_angle_count'] = 9
 
@@ -220,6 +220,9 @@ async def retrieveSensorData():
 '''
 Retrieves initial GPS state of drone
 
+What is the argument of the function??
+Why make this a function if we just need to define it once?
+
 I threw a bunch of global keywords here-will clean this up later
 '''
 def retrieveInitialState(lla_ref):
@@ -241,11 +244,10 @@ def retrieveInitialState(lla_ref):
     # final_long = float(input("What is the final longitude?\n"))
 
     #full vector
-    # TODO: Did y'all mean current lat/long (as opposed to initial lat/long)? yeah I changed the neams and forgot to change those
     full_lat = final_lat - current_lat
     full_long = final_long - current_long
 
-    # TODO: Did y'all mean full lat/long (as opposed to just lat/long)? yeah
+    #magnitude of final vector
     magnitude = (full_lat ** 2 + full_long ** 2) ** 0.5
 
     #unit vector
@@ -262,33 +264,34 @@ containing GPS values and uses this to
 Output: New latitude, longitude, altitude
 '''
 def computationalAnalysis(lidar_dict):
+    
     #variables
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
     theta = lidar_dict['y_ori']
 
-    #the grid lines we are using can change, fow now I just picked the bottom one and one 20 degrees away
+    #the grid lines we are using can change, fow now I just picked the bottom one and the other one step size away degrees away
     # TODO: Arrays are zero indexed, so I subtracted one from each of the values so that the code would compile - check
-    r1 = lidar_dict['ranges'][8][9]
-    r2 = lidar_dict['ranges'][6][9]
+    r1 = lidar_dict['ranges'][8][10]
+    r2 = lidar_dict['ranges'][7][10]
+    if r2 != inf:
 
-    #equations
-    y1 = r1 * math.sin(theta + alpha1)
-    x1 = r1 * math.cos(theta + alpha1)
-    y2 = r2 * math.sin(theta + alpha2)
-    x2 = r2 * math.cos(theta + alpha2)
+        #equations
+        y1 = r1 * math.sin(theta + alpha1)
+        x1 = r1 * math.cos(theta + alpha1)
+        y2 = r2 * math.sin(theta + alpha2)
+        x2 = r2 * math.cos(theta + alpha2)
 
-    #change in values
-    change_lat = unit_vector_lat * (x2 - x1) / 111000
-    change_long = unit_vector_long * (x2 - x1) / 111000
-    change_alt = y2 - y1
+        #change in values
+        change_lat = unit_vector_lat * (x2 - x1) / 111000
+        change_long = unit_vector_long * (x2 - x1) / 111000
+        change_alt = y2 - y1
 
-    # TODO: ** Below, I've commented out code and returned set values so that it will run **
+        #redefine current values to goal
+        current_lat += change_lat
+        current_long += change_long
+        current_alt += change_alt
 
-    #redefine current values to goal
-    # current_lat += change_lat
-    # current_long += change_long
-    # current_alt += change_alt
 
     # TODO: Figure out how to make this function handle 'inf' range values
     # With the original code, the code will not continue because the values that are returned atm
