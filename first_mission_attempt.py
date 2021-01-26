@@ -366,7 +366,6 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
 
 async def run():
     # Apparently a test message makes subsequent requests faster
-    loop = asyncio.get_event_loop()
     gz_task = asyncio.create_task(gz_sub.connect())
     await gz_sub.get_LaserScanStamped()
 
