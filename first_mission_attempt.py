@@ -272,26 +272,21 @@ def computationalAnalysis(lidar_dict):
     while (np.isnan(r2)):
         farthest_gridline -= 1
         r2 = lidar_dict['ranges'][farthest_gridline][10]
-    # print("Farthest gridline: ", r2)
 
     #the grid lines we are using can change, fow now I just picked the bottom one and the other one step size away degrees away
     
     r1 = lidar_dict['ranges'][0][10]
-    # print("Closest gridline: ", r1)
 
     #variables
     alpha1 = lidar_dict['v_angle_min']
     alpha2 = alpha1 + lidar_dict['v_angle_step'] * farthest_gridline
     theta = lidar_dict['y_ori']
 
-    # print("Calculates some mathy variables ", alpha1, alpha2, theta)
-
     #equations
     y1 = r1 * math.sin(theta + alpha1)
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
-    # print("equations bois: ", y1, x1, y2, x2)
 
     #change in values
     change_lat = unit_vector_lat * (x2 - x1) / 111000
@@ -300,18 +295,11 @@ def computationalAnalysis(lidar_dict):
     print("change in values: ", change_lat, change_long, change_alt)
 
     #redefine current values to goal
-    print(current_lat, current_long, current_alt)
+    global current_lat, current_long, current_alt
     current_lat += change_lat
-    print('yeet')
     current_long += change_long
-    print('yonk')
     current_alt += change_alt
-    print('yote')
 
-    # TODO: Figure out how to make this function handle 'inf' range values
-    # With the original code, the code will not continue because the values that are returned atm
-    # are of value 'inf', which isn't good.
-    # return current_lat, current_long, current_alt <-- original code
     return current_lat, current_long, current_alt
 
 
