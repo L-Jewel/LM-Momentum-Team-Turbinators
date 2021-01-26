@@ -334,7 +334,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 delta_long = abs(final_long - new_long)
                 distance_2d = math.sqrt(delta_lat * delta_lat + delta_long * delta_long)
                 print("-- * Distance from end point calculated ", delta_lat, delta_long, distance_2d)
-                if (distance_2d < .000001): # If the drone is close enough to the final waypoint, it proceeds to land
+                if (distance_2d < .00009): # If the drone is close enough to the final waypoint (~10m), it proceeds to land
                     done = True
                     print("-- * Drone is close!")
                 else: # Else, it inserts the waypoint with the new coords
@@ -394,7 +394,7 @@ async def run():
     print("Retrieving intial GPS data...")
     retrieveInitialState(lla_ref)
 
-    AGL = lla_ref[2] + 1 # Height above ground to maintain
+    AGL = lla_ref[2] + 0.0000333 # Height above ground to maintain (3m)
 
     # The mission items would be appended to this array here
     mission_items = []
@@ -412,9 +412,9 @@ async def run():
                                      float('nan'),
                                      float('nan')))
 
-    # Last waypoint is the end
-    final_lat = lla_ref[0] + 0.0001 #Why define it again if they are beign defined in retrieveInitialState?
-    final_lon = lla_ref[1] + 0.0001
+    # Last waypoint is the end [I'm assuming lat is x rn and lon is y] --> (38, 0, 1)
+    final_lat = lla_ref[0] + 0.0004218
+    final_lon = lla_ref[1]
     mission_items.append(MissionItem(final_lat,
                                      final_lon,
                                      AGL,
