@@ -267,6 +267,13 @@ Output: New latitude, longitude, altitude
 '''
 def computationalAnalysis(lidar_dict):
 
+    # Iterate through gridline 10 until we reach a value that isn't infinite
+    farthest_gridline = 8
+    farthest_range = lidar_dict['ranges'][x][10]
+    while (np.isnan(farthest_range)):
+        farthest_gridline -= 1
+        farthest_range = lidar_dict['ranges'][x][10]
+
     #variables
     alpha1 = math.pi / -2
     alpha2 = -7 / 18 * math.pi
