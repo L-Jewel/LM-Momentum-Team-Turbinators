@@ -214,7 +214,6 @@ Returns two dictionaries (make sure to use two variables to retrieve)
 '''
 async def retrieveSensorData():
     print('-- Retrieving LiDAR Sensor Data')
-    # gps_val = await gz_sub.get_GPS() <-- Removing because it isn't needed
     lidar_val = await gz_sub.get_LaserScanStamped()
     return display_LiDAR(gz_sub)
 
@@ -239,10 +238,8 @@ def retrieveInitialState(lla_ref):
     current_alt = lla_ref[2]
 
     #ask for final point and AGL
-    final_lat = current_lat + 0.0001
-    final_long = current_long + 0.0001
-    # final_lat = float(input("What is the final latitude?\n"))
-    # final_long = float(input("What is the final longitude?\n"))
+    final_lat = lla_ref[0] 
+    final_long = lla_ref[1] + 0.0004218
 
     #full vector
     full_lat = final_lat - current_lat
@@ -286,13 +283,13 @@ def computationalAnalysis(lidar_dict):
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
-    breakpoint()
 
     #change in values
     change_lat = unit_vector_lat * (x2 - x1) / 111000
     change_long = unit_vector_long * (x2 - x1) / 111000
     change_alt = y2 - y1
-    print("change in values: ", change_lat, change_long, change_alt)
+
+    print("Change in values: ", change_lat, change_long, change_alt)
 
     #redefine current values to goal
     global current_lat, current_long, current_alt
@@ -304,7 +301,7 @@ def computationalAnalysis(lidar_dict):
 
 
 async def run_mission(drone, mission_items, lla_ref, gz_sub):
-    max_speed = 1.5 # m/s
+    max_speed = 1 # m/s
     done = False # Signals end of mission
 
     mission_item_idx = 0 # Keeps track of the mission item we're on
@@ -335,7 +332,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 delta_long = abs(final_long - new_long)
                 distance_2d = math.sqrt(delta_lat * delta_lat + delta_long * delta_long)
                 print("-- * Distance from end point calculated ", delta_lat, delta_long, distance_2d)
-                if (distance_2d < .00009): # If the drone is close enough to the final waypoint (~10m), it proceeds to land
+                if (distance_2d < .000045): # If the drone is close enough to the final waypoint (~5m), it proceeds to land
                     done = True
                     print("-- * Drone is close!")
                 else: # Else, it inserts the waypoint with the new coords
@@ -395,9 +392,8 @@ async def run():
     print("Retrieving intial GPS data...")
     retrieveInitialState(lla_ref)
 
-    AGL = lla_ref[2] + 0.0000333 # Height above ground to maintain (3m)
+    # Height above ground to maintain (3m)
     AGL = lla_ref[2] + 3
-    print("yeet -->", lla_ref[2], AGL)
 
     # The mission items would be appended to this array here
     mission_items = []
@@ -415,11 +411,9 @@ async def run():
                                      float('nan'),
                                      float('nan')))
 
-    # Last waypoint is the end [I'm assuming lat is x rn and lon is y] --> (38, 0, 1)
-    final_lat = lla_ref[0] + 0.0004218
-    final_lon = lla_ref[1]
+    # Last waypoint is the end [I'm assuming lat is y rn and lon is y] --> (38, 0, 1)
     mission_items.append(MissionItem(final_lat,
-                                     final_lon,
+                                     final_long,
                                      AGL,
                                      2,
                                      True,
