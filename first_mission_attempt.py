@@ -231,16 +231,17 @@ def retrieveInitialState(lla_ref):
     # initial_lidar_data, initial_gps_data = await retrieveSensorData()
 
     # Initializes global variables
-    global current_lat, current_long, current_alt, final_lat, final_long, full_lat, full_long, magnitude, unit_vector_lat, unit_vector_long
+    global current_lat, current_long, current_alt, given_AGL #final_lat, final_long, full_lat, full_long, magnitude, unit_vector_lat, unit_vector_long
 
     #initial points
     current_lat = lla_ref[0]
     current_long = lla_ref[1]
     current_alt = lla_ref[2]
 
-    #ask for final point
+    #ask for final point and AGL
     final_lat = current_lat + 0.0001
     final_long = current_long + 0.0001
+    given_AGL = 3 #This can be set when they give it to us
     # final_lat = float(input("What is the final latitude?\n"))
     # final_long = float(input("What is the final longitude?\n"))
 
@@ -276,32 +277,40 @@ def computationalAnalysis(lidar_dict):
     r1 = lidar_dict['ranges'][8][10]
     r2 = lidar_dict['ranges'][7][10]
 
-    #inf error
-    if r2 == inf:
-        #r2 assumed as far as the lidar reached since we know it didnt detect anything
-        r2 = 10
+    #check if the height of the drone approximately matches the AGL
+    if abs(r1 - given_AGL) > .0001:
 
-    #equations
-    y1 = r1 * math.sin(theta + alpha1)
-    x1 = r1 * math.cos(theta + alpha1)
-    y2 = r2 * math.sin(theta + alpha2)
-    x2 = r2 * math.cos(theta + alpha2)
+        #just go up to the AGL to correct the path and keep going
+        return current_lat, current_long, given_AGL
 
-    #change in values
-    change_lat = unit_vector_lat * (x2 - x1) / 111000
-    change_long = unit_vector_long * (x2 - x1) / 111000
-    change_alt = y2 - y1
+    else:
 
-    #redefine current values to goal
-    current_lat += change_lat
-    current_long += change_long
-    current_alt += change_alt
+        #inf error
+        if r2 == inf:
+            #r2 assumed as far as the lidar reached since we know it didnt detect anything
+            r2 = 10
 
-    # TODO: Figure out how to make this function handle 'inf' range values
-    # With the original code, the code will not continue because the values that are returned atm
-    # are of value 'inf', which isn't good.
-    # return current_lat, current_long, current_alt <-- original code
-    return current_lat, current_long, current_alt # Remember AGL in altitude
+        #equations
+        y1 = r1 * math.sin(theta + alpha1)
+        x1 = r1 * math.cos(theta + alpha1)
+        y2 = r2 * math.sin(theta + alpha2)
+        x2 = r2 * math.cos(theta + alpha2)
+
+        #change in values
+        change_lat = unit_vector_lat * (x2 - x1) / 111000
+        change_long = unit_vector_long * (x2 - x1) / 111000
+        change_alt = y2 - y1
+
+        #redefine current values to goal
+        current_lat += change_lat
+        current_long += change_long
+        current_alt += change_alt
+
+        # TODO: Figure out how to make this function handle 'inf' range values
+        # With the original code, the code will not continue because the values that are returned atm
+        # are of value 'inf', which isn't good.
+        # return current_lat, current_long, current_alt <-- original code
+        return current_lat, current_long, current_alt # Remember AGL in altitude
 
 
 async def run_mission(drone, mission_items, lla_ref, gz_sub):
