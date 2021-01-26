@@ -286,6 +286,7 @@ def computationalAnalysis(lidar_dict):
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
+    breakpoint()
 
     #change in values
     change_lat = unit_vector_lat * (x2 - x1) / 111000
