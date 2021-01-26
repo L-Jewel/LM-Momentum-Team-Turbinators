@@ -231,7 +231,7 @@ def retrieveInitialState(lla_ref):
     # initial_lidar_data, initial_gps_data = await retrieveSensorData()
 
     # Initializes global variables
-    global current_lat, current_long, current_alt, given_AGL #final_lat, final_long, full_lat, full_long, magnitude, unit_vector_lat, unit_vector_long
+    global current_lat, current_long, current_alt, unit_vector_lat, unit_vector_long, final_lat, final_long
 
     #initial points
     current_lat = lla_ref[0]
@@ -269,29 +269,29 @@ def computationalAnalysis(lidar_dict):
     # Iterate through gridline 10 until we reach a value that isn't infinite
     farthest_gridline = 8
     r2 = lidar_dict['ranges'][farthest_gridline][10]
-    while (np.isnan(farthest_range)):
+    while (np.isnan(r2)):
         farthest_gridline -= 1
         r2 = lidar_dict['ranges'][farthest_gridline][10]
-    print("Farthest gridline: ", r2)
+    # print("Farthest gridline: ", r2)
 
     #the grid lines we are using can change, fow now I just picked the bottom one and the other one step size away degrees away
-    # TODO: Arrays are zero indexed, so I subtracted one from each of the values so that the code would compile - check
+    
     r1 = lidar_dict['ranges'][0][10]
-    print("Closest gridline: ", r1)
+    # print("Closest gridline: ", r1)
 
     #variables
     alpha1 = lidar_dict['v_angle_min']
     alpha2 = alpha1 + lidar_dict['v_angle_step'] * farthest_gridline
     theta = lidar_dict['y_ori']
 
-    print("Calculates some mathy variables ", alpha1, alpha2, theta)
+    # print("Calculates some mathy variables ", alpha1, alpha2, theta)
 
     #equations
     y1 = r1 * math.sin(theta + alpha1)
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
-    print("equations bois: ", y1, x1, y2, x2)
+    # print("equations bois: ", y1, x1, y2, x2)
 
     #change in values
     change_lat = unit_vector_lat * (x2 - x1) / 111000
@@ -300,15 +300,19 @@ def computationalAnalysis(lidar_dict):
     print("change in values: ", change_lat, change_long, change_alt)
 
     #redefine current values to goal
+    print(current_lat, current_long, current_alt)
     current_lat += change_lat
+    print('yeet')
     current_long += change_long
+    print('yonk')
     current_alt += change_alt
+    print('yote')
 
     # TODO: Figure out how to make this function handle 'inf' range values
     # With the original code, the code will not continue because the values that are returned atm
     # are of value 'inf', which isn't good.
     # return current_lat, current_long, current_alt <-- original code
-    return current_lat, current_long, current_alt # Remember AGL in altitude
+    return current_lat, current_long, current_alt
 
 
 async def run_mission(drone, mission_items, lla_ref, gz_sub):
@@ -334,10 +338,11 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
                 lidar = await retrieveSensorData()
 
                 print("-- Making new mission plan")
-                new_lat, new_long, new_alt = computationalAnalysis(lidar) # Grabs the new lat/long/alt from the computaitonal analysis function
+                # Grabs the new lat/long/alt from the computaitonal analysis function
+                new_lat, new_long, new_alt = computationalAnalysis(lidar)
 
                 # Runs checks to see if the drone is done with the mission
-                print("-- * Analysis Completed ", new_lat, new_long, new_alt) #
+                print("-- * Analysis Completed ", new_lat, new_long, new_alt)
                 delta_lat = abs(final_lat - new_lat)
                 delta_long = abs(final_long - new_long)
                 distance_2d = math.sqrt(delta_lat * delta_lat + delta_long * delta_long)
