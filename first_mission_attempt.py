@@ -6,6 +6,7 @@ import pygazebo.msg.v11.laserscan_stamped_pb2 # Imports LiDAR readouts
 import pygazebo.msg.v11.gps_pb2 # Imports GPS readouts
 import math
 import time
+import numpy as np
 
 from mavsdk import System
 from mavsdk.mission import (MissionItem, MissionPlan)
@@ -215,7 +216,6 @@ async def retrieveSensorData():
     print('-- Retrieving LiDAR Sensor Data')
     # gps_val = await gz_sub.get_GPS() <-- Removing because it isn't needed
     lidar_val = await gz_sub.get_LaserScanStamped()
-    print(lidar_val)
     return display_LiDAR(gz_sub)
 
 '''
@@ -266,13 +266,12 @@ containing GPS values and uses this to
 Output: New latitude, longitude, altitude
 '''
 def computationalAnalysis(lidar_dict):
-
     # Iterate through gridline 10 until we reach a value that isn't infinite
     farthest_gridline = 8
-    r2 = lidar_dict['ranges'][x][10]
+    r2 = lidar_dict['ranges'][farthest_gridline][10]
     while (np.isnan(farthest_range)):
         farthest_gridline -= 1
-        r2 = lidar_dict['ranges'][x][10]
+        r2 = lidar_dict['ranges'][farthest_gridline][10]
     print("Farthest gridline: ", r2)
 
     #the grid lines we are using can change, fow now I just picked the bottom one and the other one step size away degrees away
@@ -331,7 +330,7 @@ async def run_mission(drone, mission_items, lla_ref, gz_sub):
 
                 mission_item_idx = mission_progress.current
 
-                print("-- Get LiDAR and GPS Readings")
+                print("-- Get LiDAR Readings")
                 lidar = await retrieveSensorData()
 
                 print("-- Making new mission plan")
