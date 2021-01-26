@@ -168,7 +168,7 @@ def display_LiDAR(gazebo_sub):
     for v in range(1, result['v_angle_count'] + 1):
         row = []
         for h in range(1, result['h_angle_count'] + 1):
-            row.append(gazebo_sub.LaserScanStamped.scan.ranges[(result['v_angle_count'] * result['h_angle_count']) - 1])
+            row.append(gazebo_sub.LaserScanStamped.scan.ranges[(v * h) - 1])
         ranges.append(row)
     result['ranges'] = ranges
 
@@ -215,6 +215,7 @@ async def retrieveSensorData():
     print('-- Retrieving LiDAR Sensor Data')
     # gps_val = await gz_sub.get_GPS() <-- Removing because it isn't needed
     lidar_val = await gz_sub.get_LaserScanStamped()
+    print(lidar_val)
     return display_LiDAR(gz_sub)
 
 '''
@@ -395,6 +396,8 @@ async def run():
     retrieveInitialState(lla_ref)
 
     AGL = lla_ref[2] + 0.0000333 # Height above ground to maintain (3m)
+    AGL = lla_ref[2] + 3
+    print("yeet -->", lla_ref[2], AGL)
 
     # The mission items would be appended to this array here
     mission_items = []
@@ -446,7 +449,7 @@ async def run():
     await asyncio.sleep(1)
     print("awaiting done")
 
-    await drone.action.set_takeoff_altitude(AGL)
+    await drone.action.set_takeoff_altitude(3)
 
     print("-- Starting mission")
     await drone.mission.start_mission()
