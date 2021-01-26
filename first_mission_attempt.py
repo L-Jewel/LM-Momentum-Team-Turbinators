@@ -269,30 +269,36 @@ def computationalAnalysis(lidar_dict):
 
     # Iterate through gridline 10 until we reach a value that isn't infinite
     farthest_gridline = 8
-    farthest_range = lidar_dict['ranges'][x][10]
+    r2 = lidar_dict['ranges'][x][10]
     while (np.isnan(farthest_range)):
         farthest_gridline -= 1
         r2 = lidar_dict['ranges'][x][10]
+    print("Farthest gridline: ", r2)
 
     #the grid lines we are using can change, fow now I just picked the bottom one and the other one step size away degrees away
     # TODO: Arrays are zero indexed, so I subtracted one from each of the values so that the code would compile - check
     r1 = lidar_dict['ranges'][0][10]
+    print("Closest gridline: ", r1)
 
     #variables
-    alpha1 = math.pi / -2
-    alpha2 = math.pi / -2 + math.pi / 16 * farthest_gridline
+    alpha1 = lidar_dict['v_angle_min']
+    alpha2 = alpha1 + lidar_dict['v_angle_step'] * farthest_gridline
     theta = lidar_dict['y_ori']
+
+    print("Calculates some mathy variables ", alpha1, alpha2, theta)
 
     #equations
     y1 = r1 * math.sin(theta + alpha1)
     x1 = r1 * math.cos(theta + alpha1)
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
+    print("equations bois: ", y1, x1, y2, x2)
 
     #change in values
     change_lat = unit_vector_lat * (x2 - x1) / 111000
     change_long = unit_vector_long * (x2 - x1) / 111000
     change_alt = y2 - y1
+    print("change in values: ", change_lat, change_long, change_alt)
 
     #redefine current values to goal
     current_lat += change_lat
