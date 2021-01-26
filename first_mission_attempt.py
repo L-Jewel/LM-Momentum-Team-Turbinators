@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import asyncio
-import pygazebo
-import pygazebo.msg.v11.laserscan_stamped_pb2 # Imports LiDAR readouts
-import pygazebo.msg.v11.gps_pb2 # Imports GPS readouts
+import py3gazebo
+import py3gazebo.msg.v11.laserscan_stamped_pb2 # Imports LiDAR readouts
+import py3gazebo.msg.v11.gps_pb2 # Imports GPS readouts
 import math
 import time
 import numpy as np
