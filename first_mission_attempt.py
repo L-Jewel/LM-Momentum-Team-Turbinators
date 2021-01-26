@@ -241,7 +241,6 @@ def retrieveInitialState(lla_ref):
     #ask for final point and AGL
     final_lat = current_lat + 0.0001
     final_long = current_long + 0.0001
-    given_AGL = 3 #This can be set when they give it to us
     # final_lat = float(input("What is the final latitude?\n"))
     # final_long = float(input("What is the final longitude?\n"))
 
@@ -274,7 +273,7 @@ def computationalAnalysis(lidar_dict):
         r2 = lidar_dict['ranges'][farthest_gridline][10]
 
     #the grid lines we are using can change, fow now I just picked the bottom one and the other one step size away degrees away
-    
+
     r1 = lidar_dict['ranges'][0][10]
 
     #variables
