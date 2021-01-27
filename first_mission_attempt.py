@@ -273,10 +273,14 @@ def computationalAnalysis(lidar_dict):
 
     r1 = lidar_dict['ranges'][0][10]
 
+    print(f"Gridlines - r1: {r1}, r2: {r2}")
+
     #variables
     alpha1 = lidar_dict['v_angle_min']
     alpha2 = alpha1 + lidar_dict['v_angle_step'] * farthest_gridline
     theta = lidar_dict['y_ori']
+
+    print(f"Variables - alpha1: {alpha1}, alpha2: {alpha2}, theta: {theta}")
 
     #equations
     y1 = r1 * math.sin(theta + alpha1)
@@ -284,12 +288,14 @@ def computationalAnalysis(lidar_dict):
     y2 = r2 * math.sin(theta + alpha2)
     x2 = r2 * math.cos(theta + alpha2)
 
+    print(f"Equations - y1: {y1}, x1: {x1}, y2: {y2}, x2: {x2}")
+
     #change in values
     change_lat = unit_vector_lat * (x2 - x1) / 111000
     change_long = unit_vector_long * (x2 - x1) / 111000
     change_alt = y2 - y1
 
-    print("Change in values: ", change_lat, change_long, change_alt)
+    print(f"Change in values - lat: {change_lat}, long: {change_long}, alt: {change_alt}")
 
     #redefine current values to goal
     global current_lat, current_long, current_alt
